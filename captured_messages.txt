@@ -1,0 +1,15 @@
+[2025-04-30 14:19:20] START 
+/* start voltage measuring ! */
+led_avg = 0 
+Vcc_avg = 0 
+plus_5_avg = 0 
+min_5_avg = 0 
+LED is OK 
+Vcc Volt is not OK ! 
+Plus 5 Volt is not OK 
+Minus 5 volt is OK 
+/* start display validating ! */
+raspberry pi is OK 
+raspberry pi is running 
+Reset STM Board 
+STOP
