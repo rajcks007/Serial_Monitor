@@ -41,20 +41,6 @@ class SerialMonitor:
 
         self.captured_messages = []  # List to store message tuples
 
-        self.master.grid_rowconfigure(0, weight=0)  # Do not allow row 0 to expand
-        self.master.grid_rowconfigure(1, weight=1)  # Allow row 1 to expand
-        self.master.grid_columnconfigure(0, weight=1)   # Allow column 0 to expand
-        self.master.grid_columnconfigure(1, weight=1)   # Allow column 1 to expand
-        self.master.grid_columnconfigure(2, weight=1)   # Allow column 2 to expand
-        self.master.grid_columnconfigure(3, weight=1)   # Allow column 3 to expand
-        self.master.grid_columnconfigure(4, weight=1)   # Allow column 4 to expand
-        self.master.grid_columnconfigure(5, weight=1)   # Allow column 5 to expand
-        self.master.grid_columnconfigure(6, weight=1)   # Allow column 6 to expand
-        self.master.grid_columnconfigure(7, weight=1)   # Allow column 7 to expand  
-        self.master.grid_columnconfigure(8, weight=1)   # Allow column 8 to expand
-        self.master.grid_rowconfigure(0, weight=0)  # Do not allow row 0 to expand
-        self.master.grid_rowconfigure(1, weight=1)  # Allow row 1 to expand
-
         self.master.protocol("WM_DELETE_WINDOW", self.on_close)  # Handle window close event
 
         # Set the window icon (this icon will appear in the title bar)
@@ -67,48 +53,115 @@ class SerialMonitor:
         # Flag to indicate if the serial connection is active
         self.connection_active = False  
 
+        self.manual_header = ["LED AVERAGE",
+                               "VCC AVERAGE", 
+                               "PLUS AVERAGE", 
+                               "MINUS AVERAGE",
+                               "BATTERY AVERAGE",
+                               "LED", 
+                               "VCC",
+                               "PLUS VOLT", 
+                               "MINUS VOLT",
+                               "BATTERY VOLT", 
+                               "RASPBERRY PI", 
+                               "RASPBERRY PI RUN", 
+                               "SCREEN", 
+                               "SCREEN", 
+                               "SCREEN", 
+                               "SCREEN", 
+                               "SCREEN",
+                               "SCREEN",
+                               "SCREEN",
+                               "SCREEN" ]  # Define the manual header for the CSV file
+        self.header = self.manual_header  # Set the header to manual header by default
+
     def on_close(self):
     # Ensure disconnection before closing the app
         if self.connection_active:
             self.disconnect()
         self.master.destroy()  # Close the Tkinter window
 
-
-    def create_widgets(self):
-        self.port_combobox_label = ttk.Label(self.master, text="Select Port:")  
-        self.port_combobox_label.grid(row=0, column=0, padx=10, pady=10)        
-
-        self.populate_ports()   # Populate the combobox with available serial ports
-
-        self.baud_combobox_label = ttk.Label(self.master, text="Select Baud Rate:")     
-        self.baud_combobox_label.grid(row=0, column=2, padx=10, pady=10)        
-
-        self.baud_combobox = ttk.Combobox(self.master, values=["2400","4800","9600","14400", "115200"], state="readonly")   # Create a combobox for baud rates
-        self.baud_combobox.set("115200")    # Set default baud rate
-        self.baud_combobox.grid(row=0, column=3, padx=10, pady=10)      
-
-        self.connect_button = ttk.Button(self.master, text="Connect", command=self.connect) # Create a button to connect to the selected port
-        self.connect_button.grid(row=0, column=4, padx=10, pady=10)     
-
-        self.disconnect_button = ttk.Button(self.master, text="Disconnect", command=self.disconnect, state=tk.DISABLED) # Create a button to disconnect from the port
-        self.disconnect_button.grid(row=0, column=5, padx=10, pady=10)
+    def create_widgets(self):  # Method to create the widgets in the main window
 
         # self.export_txt_button = ttk.Button(self.master, text="Export as TXT", command=self.export_txt, state=tk.DISABLED)  # Create a button to export log as TXT
         # self.export_txt_button.grid(row=0, column=6, padx=10, pady=10)  
 
-        self.export_csv_button = ttk.Button(self.master, text="Export as CSV", command=self.export_csv, state=tk.DISABLED)  # Create a button to export log as CSV
-        self.export_csv_button.grid(row=0, column=7, padx=10, pady=10)  
+        # self.export_csv_button = ttk.Button(self.master, text="Export as CSV", command=self.export_csv, state=tk.DISABLED)  # Create a button to export log as CSV
+        # self.export_csv_button.grid(row=0, column=7, padx=10, pady=10)  
 
         # self.export_xml_button = ttk.Button(self.master, text="Export as XML", command=self.export_xml, state=tk.DISABLED)  # Create a button to export log as XML
         # self.export_xml_button.grid(row=0, column=8, padx=10, pady=10)  
 
-        self.log_text = scrolledtext.ScrolledText(self.master, wrap=tk.WORD)    # Create a scrolled text area for displaying log data
-        self.log_text.grid(row=1, column=0, columnspan=9, padx=10, pady=10, sticky="nsew")       # Expand to fill the window
+        # ========== Main Frames ==========
+        self.left_frame = ttk.Frame(self.master)
+        self.left_frame.grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
+
+        self.right_frame = ttk.Frame(self.master)
+        self.right_frame.grid(row=0, column=1, padx=10, pady=10, sticky="nsew")
+
+        self.master.grid_columnconfigure(0, weight=3)
+        self.master.grid_columnconfigure(1, weight=2)
+        self.master.grid_rowconfigure(0, weight=1)
+
+        # ========== Left Frame (Controls + Log) ==========
+
+        # Port and Baud Rate
+        self.port_combobox_label = ttk.Label(self.left_frame, text="Select Port:")  
+        self.port_combobox_label.grid(row=0, column=0, sticky="w", pady=5)
+
+        self.populate_ports()
+
+        self.baud_combobox_label = ttk.Label(self.left_frame, text="Select Baud Rate:")     
+        self.baud_combobox_label.grid(row=0, column=2, sticky="w", pady=5, padx=(20, 0))
+
+        self.baud_combobox = ttk.Combobox(self.left_frame, values=["2400", "4800", "9600", "14400", "115200"], state="readonly")   
+        self.baud_combobox.set("115200")    
+        self.baud_combobox.grid(row=0, column=3, padx=(0, 10))
+
+        # Buttons
+        self.connect_button = ttk.Button(self.left_frame, text="Connect", command=self.connect)
+        self.connect_button.grid(row=0, column=4, padx=5)
+
+        self.disconnect_button = ttk.Button(self.left_frame, text="Disconnect", command=self.disconnect, state=tk.DISABLED)
+        self.disconnect_button.grid(row=0, column=5, padx=5)
+
+        # Log Label
+        self.log_label = ttk.Label(self.left_frame, text="Message Log", font=("Helvetica", 10, "bold"))
+        self.log_label.grid(row=1, column=0, columnspan=6, sticky="w", pady=(10, 2))
+
+        # Log Text Area
+        self.log_text = scrolledtext.ScrolledText(self.left_frame, wrap=tk.WORD, height=25, width=90)
+        self.log_text.grid(row=2, column=0, columnspan=6, sticky="nsew", pady=(0, 5))
+        self.left_frame.grid_rowconfigure(2, weight=1)
+
+        # ========== Right Frame (Previous Message) ==========
+
+        self.latest_label = ttk.Label(self.right_frame, text="Previous Message", font=("Helvetica", 10, "bold"))
+        self.latest_label.grid(row=0, column=0, sticky="w")
+
+        self.latest_text = tk.Text(self.right_frame, height=32, width=60, bg="#f0f0f0", wrap="word", state="disabled")
+        self.latest_text.grid(row=1, column=0, sticky="nsew", pady=(5, 0))
+        self.right_frame.grid_rowconfigure(1, weight=1)
+        self.right_frame.grid_columnconfigure(0, weight=1)
+
+
+        # Allow columns to expand proportionally
+        self.master.grid_columnconfigure(0, weight=3)  # Left wider
+        self.master.grid_columnconfigure(1, weight=2)  # Right narrower 
+
+        # Allow row 0 (main content) to expand vertically
+        self.master.grid_rowconfigure(0, weight=1)
+
+         # Allow columes to expand vertically
+        self.left_frame.grid_columnconfigure(1, weight=1)  # Log area expands vertically
+        self.left_frame.grid_columnconfigure(2, weight=1)  # Log area expands vertically 
+        self.left_frame.grid_columnconfigure(3, weight=1)  # Log area expands vertically
+        self.left_frame.grid_columnconfigure(4, weight=1)  # Log area expands vertically
 
     def populate_ports(self):   # Method to populate the combobox with available serial ports
         ports = [port.device for port in serial.tools.list_ports.comports()]    # Get a list of available serial ports
-        self.port_combobox = ttk.Combobox(self.master, values=ports, state="readonly")  # Create a combobox for selecting ports
-        self.port_combobox.grid(row=0, column=1, padx=10, pady=10)      # Place it in the grid
+        self.port_combobox = ttk.Combobox(self.left_frame, values=ports, state="readonly")  # Create a combobox for selecting ports
+        self.port_combobox.grid(row=0, column=1, pady=5, padx=(20, 0))      # Place it in the grid
 
     def connect(self):  # Method to connect to the selected serial port
         port = self.port_combobox.get() # Get the selected port from the combobox
@@ -120,7 +173,7 @@ class SerialMonitor:
             self.disconnect_button["state"] = tk.NORMAL # Enable the disconnect button
             self.connect_button["state"] = tk.DISABLED  # Disable the connect button
             # self.export_txt_button["state"] = tk.NORMAL # Enable the export buttons
-            self.export_csv_button["state"] = tk.NORMAL # Enable the export buttons
+            # self.export_csv_button["state"] = tk.NORMAL # Enable the export buttons
             # self.export_xml_button["state"] = tk.NORMAL # Enable the export buttons
             self.port_combobox["state"] = tk.DISABLED  # Disable the port combobox
 
@@ -142,12 +195,13 @@ class SerialMonitor:
         self.log_text.see(tk.END)  # Scroll to the end of the log text area
         self.thread.join()  # Wait for the reading thread to finish
         # self.export_txt_button["state"] = tk.DISABLED   # Disable the export buttons
-        self.export_csv_button["state"] = tk.DISABLED   # Disable the export buttons
+        # self.export_csv_button["state"] = tk.DISABLED   # Disable the export buttons
         # self.export_xml_button["state"] = tk.DISABLED   # Disable the export buttons
         self.log_text.insert(tk.END, "Disconnected\n")  # Insert disconnection message into the log text area
 
     def read_from_port(self):
         buffer = ""  # Temporary buffer for incoming data
+        self.last_valid_message = ""  # Variable to store the last valid message
         start_marker = "START"  # Define start and end markers for messages
         end_marker = "STOP"  # Define start and end markers for messages
         self.log_text.insert(tk.END, "Reading from port...\n")  # Insert reading message into the log text area
@@ -157,9 +211,6 @@ class SerialMonitor:
                 line = self.ser.readline().decode("utf-8", errors="ignore")  # Read line
                 if line:
                     buffer += line  # Append line to buffer
-                    # Insert the line into the log text area
-                    self.log_text.insert(tk.END, line)  # Insert the line into the log text area
-                    self.log_text.see(tk.END)   # Scroll to the end of the log text area
 
                     # Check for complete message between START and END
                     if start_marker in buffer and end_marker in buffer:
@@ -169,21 +220,32 @@ class SerialMonitor:
 
                         full_message = buffer[start_index:end_index].strip()
                         timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                        log_entry = f"[{timestamp}] {full_message}\n"
+                        log_entry = f"[{timestamp}]\n{full_message}\n"
 
                         # Store or log the message
                         with open("captured_messages.txt", "w") as file:
                             file.write(log_entry)
 
-                        self.log_text.insert(tk.END, log_entry)  # Insert the log entry into the text area
+                        if not self.save_message_exact(full_message, timestamp):
+                            buffer = buffer[end_index:]
+                            continue  # Skip to the next iteration if the message is not valid
+
+                        # self.log_text.insert(tk.END, log_entry)  # Insert the log entry into the text area
                         self.log_text.see(tk.END)  # Scroll to the end of the log text area
 
-                        self.captured_messages.append((timestamp, full_message))  # Store the message with timestamp
+                        # ✅ Only here: move previous valid message to latest_text
+                        self.latest_text.configure(state='normal')
+                        self.latest_text.delete("1.0", tk.END)
+                        self.latest_text.insert(tk.END, self.last_valid_message)  # Insert the last valid message into the latest_text area
+                        self.latest_text.configure(state='disabled')
 
-                        # Clear screen and show the extracted message
-                        self.log_text.delete(1.0, tk.END)
+                        # Show new message in log_text
+                        self.log_text.delete("1.0", tk.END)
                         self.log_text.insert(tk.END, f"New Message Received:\n{log_entry}")
                         self.log_text.see(tk.END)
+
+                        # Update last_valid_message to the new message (this is the last good message now)
+                        self.last_valid_message = f"[{timestamp}]\n{full_message}"
 
                         # Clear buffer after processing
                         buffer = buffer[end_index:]
@@ -192,6 +254,39 @@ class SerialMonitor:
                 if self.connection_active:
                     self.log_text.insert(tk.END, f"Error reading from port: {str(e)}\n")
                 break
+
+    # Save the message to a CSV file with a timestamp
+    # This method filters out comment lines and checks for column count before saving
+    def save_message_exact(self, full_message, timestamp):
+        # Split the full message into individual lines
+        split_message = [part.strip() for part in full_message.splitlines() if part.strip()]
+
+        # Filter out any comment lines (those starting with /* and ending with */)
+        filtered_message = [part for part in split_message if not (part.startswith("/*") and part.endswith("*/"))]
+
+        # If the filtered message is empty (meaning the whole message was a comment), skip it
+        if not filtered_message:
+            return False  # Signal to skip
+
+        # Parse message into a dictionary {key: value}
+        message_dict = {}
+        for line in filtered_message:
+            if "=" in line:
+                key, value = line.split("=", 1)
+                message_dict[key.strip()] = value.strip()
+
+        # Build the row with values in the order of self.manual_header
+        row = [message_dict.get(header, "") for header in self.manual_header]
+
+        # Save to CSV (overwrite to keep only latest message)
+        csv_filename = "AM60.csv"
+        with open(csv_filename, mode="w", newline="") as csvfile:  # Open in write mode
+            writer = csv.writer(csvfile)
+            writer.writerow(["Timestamp"] + self.manual_header)
+            writer.writerow([timestamp] + row)
+
+        return True  # Signal success
+
         
 
     """

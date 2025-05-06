@@ -1,15 +1,26 @@
-[2025-04-30 14:19:20] START 
+[2025-05-06 14:49:55]
+START 
 /* start voltage measuring ! */
-led_avg = 0 
-Vcc_avg = 0 
-plus_5_avg = 0 
-min_5_avg = 0 
+/* 800; 4020; 3000; 600 */
+/* 800; 4020; 3000; 600 */
+/* 800; 4020; 3000; 600 */
+led_avg = 800 
+LED is not OK 
 LED is OK 
+Vcc_avg = 4020 
 Vcc Volt is not OK ! 
+Vcc Volt is OK ! 
+plus_5_avg = 3000 
 Plus 5 Volt is not OK 
+Plus 5 Volt is OK 
+min_5_avg = 600 
+Minus 5 volt is not OK 
 Minus 5 volt is OK 
 /* start display validating ! */
 raspberry pi is OK 
+Raspberry pi is not working ! 
 raspberry pi is running 
+screen is working OK 
+screen is not OK 
 Reset STM Board 
 STOP
