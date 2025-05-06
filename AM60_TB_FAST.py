@@ -65,14 +65,12 @@ class SerialMonitor:
                                "BATTERY VOLT", 
                                "RASPBERRY PI", 
                                "RASPBERRY PI RUN", 
-                               "SCREEN", 
-                               "SCREEN", 
-                               "SCREEN", 
-                               "SCREEN", 
-                               "SCREEN",
-                               "SCREEN",
-                               "SCREEN",
-                               "SCREEN" ]  # Define the manual header for the CSV file
+                               "SCREEN_1", 
+                               "SCREEN_2", 
+                               "SCREEN_3", 
+                               "SCREEN_4", 
+                               "SCREEN_5",
+                               "SCREEN_6" ]  # Define the manual header for the CSV file
         self.header = self.manual_header  # Set the header to manual header by default
 
     def on_close(self):
@@ -267,23 +265,55 @@ class SerialMonitor:
         # If the filtered message is empty (meaning the whole message was a comment), skip it
         if not filtered_message:
             return False  # Signal to skip
+        
+        result_dict = {key: "" for key in self.manual_header}  # Initialize a dictionary with empty values for each header
 
-        # Parse message into a dictionary {key: value}
-        message_dict = {}
-        for line in filtered_message:
-            if "=" in line:
-                key, value = line.split("=", 1)
-                message_dict[key.strip()] = value.strip()
+        # Fixed line-to-header mapping (exact match)
+        fixed_lines_map = {
+            "LED is not OK": ("LED", "1"),
+            "LED is OK": ("LED", "0"),
+            "Vcc Volt is not OK !": ("VCC", "1"),
+            "Vcc Volt is OK !": ("VCC", "0"),
+            "Plus 5 Volt is not OK": ("PLUS VOLT", "1"),
+            "Plus 5 Volt is OK": ("PLUS VOLT", "0"),
+            "Minus 5 volt is not OK": ("MINUS VOLT", "1"),
+            "Minus 5 volt is OK": ("MINUS VOLT", "0"),
+            "Battery Volt is not OK !": ("BATTERY VOLT", "1"),
+            "Battery Volt is OK !": ("BATTERY VOLT", "0"),
+            "Raspberry pi is not working !": ("RASPBERRY PI", "0"),
+            "raspberry pi is OK": ("RASPBERRY PI", "1"),
+            "raspberry pi is running": ("RASPBERRY PI RUN", "1"),
+        }
 
-        # Build the row with values in the order of self.manual_header
-        row = [message_dict.get(header, "") for header in self.manual_header]
+        lines = [line.strip() for line in full_message.splitlines() if line.strip()]
+
+        for line in lines:
+            if line.startswith("led_avg ="):
+                result_dict["LED AVERAGE"] = line.split("=", 1)[1].strip()
+            elif line.startswith("Vcc_avg ="):
+                result_dict["VCC AVERAGE"] = line.split("=", 1)[1].strip()
+            elif line.startswith("plus_5_avg ="):
+                result_dict["PLUS AVERAGE"] = line.split("=", 1)[1].strip()
+            elif line.startswith("min_5_avg ="):
+                result_dict["MINUS AVERAGE"] = line.split("=", 1)[1].strip()
+            elif line.startswith("Battery_avg ="):
+                result_dict["BATTERY AVERAGE"] = line.split("=", 1)[1].strip()
+            elif line in fixed_lines_map:
+                header, value = fixed_lines_map[line]
+                result_dict[header] = value
+            elif "screen is working OK" in line.lower() or "screen is not OK" in line.lower():
+                # Assign "1" to first empty SCREEN field
+                for i, key in enumerate(self.manual_header):
+                    if key == "SCREEN" and result_dict[key] == "":
+                        result_dict[key] = "1"
+                        break
 
         # Save to CSV (overwrite to keep only latest message)
         csv_filename = "AM60.csv"
         with open(csv_filename, mode="w", newline="") as csvfile:  # Open in write mode
             writer = csv.writer(csvfile)
             writer.writerow(["Timestamp"] + self.manual_header)
-            writer.writerow([timestamp] + row)
+            writer.writerow([timestamp] +  [result_dict[key] for key in self.manual_header])
 
         return True  # Signal success
 
