@@ -9,6 +9,7 @@ import xml.etree.ElementTree as ET
 import csv
 import threading
 import datetime
+import db_loader
 
 # Function to get the path to the icon file, works for both script and EXE
 def resource_path(relative_path):
@@ -359,10 +360,13 @@ class SerialMonitor:
             writer.writerow(["Timestamp"] + self.manual_header)
             writer.writerow([timestamp] +  [result_dict[key] for key in self.manual_header])
 
-        return True  # Signal success
-
+        success, message = db_loader.load_csv_to_db()  # Call the function to load data into the database
+        if success:
+            return True  # Signal success
+        else:
+            self.log_text.insert(tk.END, f"Database error: {message}\n")
+            return False  # Signal failure
         
-
     """
     # Uncomment the following method if you want to implement TXT export functionality
     def export_txt(self):   # Method to export the log data as a TXT file
