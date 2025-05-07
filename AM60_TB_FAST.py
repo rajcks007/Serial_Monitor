@@ -270,7 +270,6 @@ class SerialMonitor:
                             buffer = buffer[end_index:]
                             continue  # Skip to the next iteration if the message is not valid
 
-                        # self.log_text.insert(tk.END, log_entry)  # Insert the log entry into the text area
                         self.log_text.see(tk.END)  # Scroll to the end of the log text area
 
                         # ✅ Only here: move previous valid message to latest_text
@@ -360,12 +359,12 @@ class SerialMonitor:
             writer.writerow(["Timestamp"] + self.manual_header)
             writer.writerow([timestamp] +  [result_dict[key] for key in self.manual_header])
 
-        success, message = db_loader.load_csv_to_db()  # Call the function to load data into the database
-        if success:
-            return True  # Signal success
-        else:
-            self.log_text.insert(tk.END, f"Database error: {message}\n")
-            return False  # Signal failure
+        # success, message = db_loader.load_csv_to_db()  # Call the function to load data into the database
+        # if success:
+        #     return True  # Signal success
+        # else:
+        #     self.log_text.insert(tk.END, f"Database error: {message}\n")
+        #     return False  # Signal failure
         
     """
     # Uncomment the following method if you want to implement TXT export functionality
