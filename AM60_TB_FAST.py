@@ -25,6 +25,31 @@ def set_window_icon(window, icon_path):
     else:
         print(f"Icon file not found: {icon_path}")  # Print error message if icon file is not found
 
+class ToolTip:
+    def __init__(self, widget, text):
+        self.widget = widget
+        self.text = text
+        self.tip_window = None
+        widget.bind("<Enter>", self.show_tip)
+        widget.bind("<Leave>", self.hide_tip)
+
+    def show_tip(self, event=None):
+        if self.tip_window or not self.text:
+            return
+        x, y, _, cy = self.widget.bbox("insert")
+        x += self.widget.winfo_rootx() + 25
+        y += self.widget.winfo_rooty() + cy + 25
+        self.tip_window = tw = tk.Toplevel(self.widget)
+        tw.wm_overrideredirect(True)
+        tw.wm_geometry(f"+{x}+{y}")
+        label = tk.Label(tw, text=self.text, background="#ffffe0", relief="solid", borderwidth=1, font=("tahoma", "8"))
+        label.pack(ipadx=4)
+
+    def hide_tip(self, event=None):
+        if self.tip_window:
+            self.tip_window.destroy()
+            self.tip_window = None
+
 class SerialMonitor:
     def __init__(self, master):
         self.master = master    # Initialize the main window
@@ -53,7 +78,8 @@ class SerialMonitor:
         # Flag to indicate if the serial connection is active
         self.connection_active = False  
 
-        self.manual_header = ["LED AVERAGE",
+        self.manual_header = [ "Serial Number",
+                               "LED AVERAGE",
                                "VCC AVERAGE", 
                                "PLUS AVERAGE", 
                                "MINUS AVERAGE",
@@ -72,6 +98,11 @@ class SerialMonitor:
                                "SCREEN_5",
                                "SCREEN_6" ]  # Define the manual header for the CSV file
         self.header = self.manual_header  # Set the header to manual header by default
+    
+    def refresh_ports(self):
+        # Clear the current port list and re-populate
+        self.port_combobox.set('')  # Clear the current selection
+        self.populate_ports()  # Re-populate the port combobox with the new list of available ports
 
     def on_close(self):
     # Ensure disconnection before closing the app
@@ -109,27 +140,32 @@ class SerialMonitor:
 
         self.populate_ports()
 
-        self.baud_combobox_label = ttk.Label(self.left_frame, text="Select Baud Rate:")     
-        self.baud_combobox_label.grid(row=0, column=2, sticky="w", pady=5, padx=(20, 0))
+        # Refresh Button
+        self.refresh_button = ttk.Button(self.left_frame, text="⟳", command=self.refresh_ports)
+        self.refresh_button.grid(row=0, column=2, sticky="w", padx=(0, 2))  # Place it in the grid
+        ToolTip(self.refresh_button, text="Refresh available ports")  # Add tooltip to the refresh button
 
-        self.baud_combobox = ttk.Combobox(self.left_frame, values=["2400", "4800", "9600", "14400", "115200"], state="readonly")   
+        self.baud_combobox_label = ttk.Label(self.left_frame, text="Select Baud Rate:")     
+        self.baud_combobox_label.grid(row=0, column=3, sticky="w", pady=5, padx=(2, 0))
+
+        self.baud_combobox = ttk.Combobox(self.left_frame, values=["2400", "4800", "9600", "14400", "115200", "230400", "256000", "460800", "576000", "921600"], state="readonly")   
         self.baud_combobox.set("115200")    
-        self.baud_combobox.grid(row=0, column=3, padx=(0, 10))
+        self.baud_combobox.grid(row=0, column=4, padx=(0, 1))  # Place it in the grid
 
         # Buttons
         self.connect_button = ttk.Button(self.left_frame, text="Connect", command=self.connect)
-        self.connect_button.grid(row=0, column=4, padx=5)
+        self.connect_button.grid(row=0, column=5, padx=5)
 
         self.disconnect_button = ttk.Button(self.left_frame, text="Disconnect", command=self.disconnect, state=tk.DISABLED)
-        self.disconnect_button.grid(row=0, column=5, padx=5)
+        self.disconnect_button.grid(row=0, column=6, padx=5)
 
         # Log Label
         self.log_label = ttk.Label(self.left_frame, text="Message Log", font=("Helvetica", 10, "bold"))
-        self.log_label.grid(row=1, column=0, columnspan=6, sticky="w", pady=(10, 2))
+        self.log_label.grid(row=1, column=0, columnspan=7, sticky="w", pady=(10, 2))
 
         # Log Text Area
         self.log_text = scrolledtext.ScrolledText(self.left_frame, wrap=tk.WORD, height=25, width=90)
-        self.log_text.grid(row=2, column=0, columnspan=6, sticky="nsew", pady=(0, 5))
+        self.log_text.grid(row=2, column=0, columnspan=7, sticky="nsew", pady=(0, 5))
         self.left_frame.grid_rowconfigure(2, weight=1)
 
         # ========== Right Frame (Previous Message) ==========
@@ -174,6 +210,9 @@ class SerialMonitor:
             # self.export_csv_button["state"] = tk.NORMAL # Enable the export buttons
             # self.export_xml_button["state"] = tk.NORMAL # Enable the export buttons
             self.port_combobox["state"] = tk.DISABLED  # Disable the port combobox
+            self.refresh_button.config(state="disabled")
+            self.baud_combobox.config(state="disabled")  # Enable the refresh button
+
 
             self.connection_active = True   # Set the flag to True to indicate connection is active
 
@@ -196,6 +235,8 @@ class SerialMonitor:
         # self.export_csv_button["state"] = tk.DISABLED   # Disable the export buttons
         # self.export_xml_button["state"] = tk.DISABLED   # Disable the export buttons
         self.log_text.insert(tk.END, "Disconnected\n")  # Insert disconnection message into the log text area
+        self.refresh_button.config(state="enabled")  # Enable the refresh button
+        self.baud_combobox.config(state="enabled")  # Enable the baud comebox button
 
     def read_from_port(self):
         buffer = ""  # Temporary buffer for incoming data
@@ -266,7 +307,7 @@ class SerialMonitor:
         if not filtered_message:
             return False  # Signal to skip
         
-        result_dict = {key: "" for key in self.manual_header}  # Initialize a dictionary with empty values for each header
+        result_dict = {key: "null" for key in self.manual_header}  # Initialize a dictionary with empty values for each header
 
         # Fixed line-to-header mapping (exact match)
         fixed_lines_map = {
@@ -286,6 +327,7 @@ class SerialMonitor:
         }
 
         lines = [line.strip() for line in full_message.splitlines() if line.strip()]
+        screen_count = 0  # Initialize screen count for each message
 
         for line in lines:
             if line.startswith("led_avg ="):
@@ -298,15 +340,17 @@ class SerialMonitor:
                 result_dict["MINUS AVERAGE"] = line.split("=", 1)[1].strip()
             elif line.startswith("Battery_avg ="):
                 result_dict["BATTERY AVERAGE"] = line.split("=", 1)[1].strip()
+            elif "screen is working ok" in line.lower() or "screen is not ok" in line.lower():          # Check if the line contains "screen is working ok" or "screen is not ok"
+                # Assign values to Screen_1, Screen_2, etc., depending on how many screens are being processed
+                if screen_count < len([key for key in result_dict if "SCREEN" in key]):
+                    # Find the next available "SCREEN_X" slot and assign the value ("1" for "working ok", "0" for "not ok")
+                    screen_key = f"SCREEN_{screen_count + 1}"  # This is for Screen_1, Screen_2, etc.
+                    result_dict[screen_key] = "1" if "working ok" in line.lower() else "0"
+                    screen_count += 1  # Move to the next "SCREEN_X" column
+
             elif line in fixed_lines_map:
                 header, value = fixed_lines_map[line]
                 result_dict[header] = value
-            elif "screen is working OK" in line.lower() or "screen is not OK" in line.lower():
-                # Assign "1" to first empty SCREEN field
-                for i, key in enumerate(self.manual_header):
-                    if key == "SCREEN" and result_dict[key] == "":
-                        result_dict[key] = "1"
-                        break
 
         # Save to CSV (overwrite to keep only latest message)
         csv_filename = "AM60.csv"
