@@ -225,6 +225,9 @@ class DE2120BarcodeScanner(object):
         # If it's an ACK, return true
         # Otherwise, return false
         incoming = self.hard_port.read()
+        if not incoming:
+            return False
+        
         if ord(incoming) == 0x06:   # ACK
             return True
         elif ord(incoming) == 0x15:  # NACK

@@ -2,29 +2,30 @@
 from scanner_lib import DE2120BarcodeScanner as DE2120
 import time
 import serial
-import serial.tools.list_ports
+from serial.tools import list_ports
 
-# Create a DE2120 object
-scanner = DE2120(port_name="COM4")
-
-# Wait for and read barcode data
-print("Waiting for barcode...")
-
-def barcode_scanner():
+def barcode_scanner(port_name):
+    # Create a DE2120 object
+    scanner = DE2120(port_name)
     buffer = b""  # Initialize an empty byte buffer for barcode data
+
+    scanner.start_scan()  # Start scanning for barcodes
 
     try:
         while True:
-            scanner.start_scan()  # Start scanning for barcodes
+            
             time.sleep(0.1)  # Small delay to allow scanner to scan
+
             byte = scanner.read()
             if byte:
-                if byte in [b'\n', b'\r']:  # End of barcode
+                time.sleep(0.1)  # Small delay to allow scanner to process data
+                if byte in [b'\r', b'\n']:  # End of barcode
                     if buffer:
                         decoded = buffer.decode('utf-8', errors='ignore').strip()
                         print(f"Scanned barcode: {decoded}")
                         buffer = b""  # Clear buffer for next scan
-                        break  # Exit the loop after processing the barcode
+                        scanner.stop_scan()  # Stop scanning
+                        return decoded  # Return the scanned barcode
                 else:
                     buffer += byte
             else:
@@ -33,10 +34,5 @@ def barcode_scanner():
         print(f"Serial error: {e}")
     except Exception as e:
         print(f"Unexpected error: {e}")
-    finally:
-        scanner.stop_scan()  # Stop scanning
-        if scanner.is_connected():
-            scanner.factory_default()  # Reset scanner to factory settings
-            print("Scanner reset to factory settings.")
 
-    return decoded  # Return the last scanned barcode
+    return buffer.decode('utf-8', errors='ignore').strip()  # Return the scanned barcode as a string
