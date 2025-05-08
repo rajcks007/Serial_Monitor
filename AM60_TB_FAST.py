@@ -10,6 +10,7 @@ import csv
 import threading
 import datetime
 import db_loader
+from QR_Scanner import barcode_scanner
 
 # Function to get the path to the icon file, works for both script and EXE
 def resource_path(relative_path):
@@ -142,14 +143,14 @@ class SerialMonitor:
         self.populate_ports()
 
         # Refresh Button
-        self.refresh_button = ttk.Button(self.left_frame, text="⟳", command=self.refresh_ports)
-        self.refresh_button.grid(row=0, column=2, sticky="w", padx=(0, 2))  # Place it in the grid
+        self.refresh_button = ttk.Button(self.left_frame, text="⟳", width=3, command=self.refresh_ports)
+        self.refresh_button.grid(row=0, column=2, sticky="w", padx=(5, 0))  # Place it in the grid
         ToolTip(self.refresh_button, text="Refresh available ports")  # Add tooltip to the refresh button
 
-        self.baud_combobox_label = ttk.Label(self.left_frame, text="Select Baud Rate:")     
-        self.baud_combobox_label.grid(row=0, column=3, sticky="w", pady=5, padx=(2, 0))
+        self.baud_combobox_label = ttk.Label(self.left_frame, width=15, text="Select Baud Rate:")     
+        self.baud_combobox_label.grid(row=0, column=3, padx=(0, 0))
 
-        self.baud_combobox = ttk.Combobox(self.left_frame, values=["2400", "4800", "9600", "14400", "115200", "230400", "256000", "460800", "576000", "921600"], state="readonly")   
+        self.baud_combobox = ttk.Combobox(self.left_frame, values=["2400", "4800", "9600", "14400", "115200", "230400", "256000", "460800", "576000", "921600"],width=10, state="readonly")   
         self.baud_combobox.set("115200")    
         self.baud_combobox.grid(row=0, column=4, padx=(0, 1))  # Place it in the grid
 
@@ -160,13 +161,16 @@ class SerialMonitor:
         self.disconnect_button = ttk.Button(self.left_frame, text="Disconnect", command=self.disconnect, state=tk.DISABLED)
         self.disconnect_button.grid(row=0, column=6, padx=5)
 
+        self.scan_button = ttk.Button(self.left_frame, text="Scan", command=self.scan)  # Create a button to scan the serial port
+        self.scan_button.grid(row=0, column=7, padx=5)
+
         # Log Label
         self.log_label = ttk.Label(self.left_frame, text="Message Log", font=("Helvetica", 10, "bold"))
-        self.log_label.grid(row=1, column=0, columnspan=7, sticky="w", pady=(10, 2))
+        self.log_label.grid(row=1, column=0, columnspan=8, sticky="w", pady=(10, 2))
 
         # Log Text Area
         self.log_text = scrolledtext.ScrolledText(self.left_frame, wrap=tk.WORD, height=25, width=90)
-        self.log_text.grid(row=2, column=0, columnspan=7, sticky="nsew", pady=(0, 5))
+        self.log_text.grid(row=2, column=0, columnspan=8, sticky="nsew", pady=(0, 5))
         self.left_frame.grid_rowconfigure(2, weight=1)
 
         # ========== Right Frame (Previous Message) ==========
@@ -235,11 +239,23 @@ class SerialMonitor:
         # self.export_txt_button["state"] = tk.DISABLED   # Disable the export buttons
         # self.export_csv_button["state"] = tk.DISABLED   # Disable the export buttons
         # self.export_xml_button["state"] = tk.DISABLED   # Disable the export buttons
-        self.log_text.insert(tk.END, "Disconnected\n")  # Insert disconnection message into the log text area
         self.refresh_button.config(state="enabled")  # Enable the refresh button
         self.baud_combobox.config(state="enabled")  # Enable the baud comebox button
 
-    def read_from_port(self):
+    def scan(self):   # Method to disconnect from the serial port
+        self.connect_button["state"] = tk.DISABLED    # disabled the connect button
+        self.port_combobox["state"] = tk.DISABLED  # disabled the port combobox 
+        self.baud_combobox.config(state="disable")  # disabled the baud comebox button
+        self.log_text.see(tk.END)  # Scroll to the end of the log text area
+        barcode_scanner()  # Call the barcode scanner function
+        self.log_text.insert(tk.END, "Scan : \n")  # Insert disconnection message into the log text area
+        self.refresh_button.config(state="enable")  # disabled the refresh button
+        self.baud_combobox.config(state="enable")  # disabled the baud comebox button
+        self.connect_button["state"] = tk.NORMAL    # disabled the connect button
+        self.port_combobox["state"] = tk.NORMAL  # disabled the port combobox 
+
+    def read_from_port(self):  # Method to read data from the serial port in a separate thread
+        self.scan_button.config(state="disable")  # disable the refresh button
         buffer = ""  # Temporary buffer for incoming data
         self.last_valid_message = ""  # Variable to store the last valid message
         start_marker = "START"  # Define start and end markers for messages
@@ -293,6 +309,8 @@ class SerialMonitor:
                 if self.connection_active:
                     self.log_text.insert(tk.END, f"Error reading from port: {str(e)}\n")
                 break
+
+        self.scan_button.config(state="enable")  # Enable the scan button after reading is done
 
     # Save the message to a CSV file with a timestamp
     # This method filters out comment lines and checks for column count before saving

@@ -173,11 +173,13 @@ class DE2120BarcodeScanner(object):
     PROPERTY_DISABLE_ALL_2D = "AQRDIS"
 
     # Constructor
-    def __init__(self, hard_port = None):
-        if hard_port is None:
-            self.hard_port = serial.Serial("COM4", 115200, timeout=1)
-        else:
+    def __init__(self, port_name=None, baudrate=115200, hard_port=None):
+        if hard_port is not None:
             self.hard_port = hard_port
+        elif port_name is not None:
+            self.hard_port = serial.Serial(port_name, baudrate, timeout=1)
+        else:
+            raise ValueError("Please select a COM port.")
     
     # --------------------------------------------------------
     # begin()
