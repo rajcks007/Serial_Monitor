@@ -80,19 +80,19 @@ class SerialMonitor:
         # Flag to indicate if the serial connection is active
         self.connection_active = False  
 
-        self.manual_header = [ "Serial Number",
-                               "LED AVERAGE",
-                               "VCC AVERAGE", 
-                               "PLUS AVERAGE", 
-                               "MINUS AVERAGE",
-                               "BATTERY AVERAGE",
+        self.manual_header = [ "Serial_Number",
+                               "LED_AVERAGE",
+                               "VCC_AVERAGE", 
+                               "PLUS_AVERAGE", 
+                               "MINUS_AVERAGE",
+                               "BATTERY_AVERAGE",
                                "LED", 
                                "VCC",
-                               "PLUS VOLT", 
-                               "MINUS VOLT",
-                               "BATTERY VOLT", 
-                               "RASPBERRY PI", 
-                               "RASPBERRY PI RUN", 
+                               "PLUS_VOLT", 
+                               "MINUS_VOLT",
+                               "BATTERY_VOLT", 
+                               "RASPBERRY_PI", 
+                               "RASPBERRY_PI_RUN", 
                                "SCREEN_1", 
                                "SCREEN_2", 
                                "SCREEN_3", 
@@ -380,7 +380,7 @@ class SerialMonitor:
 
         # success, message = db_loader.load_csv_to_db()  # Call the function to load data into the database
         # if success:
-            # return True  # Signal success
+        #     return True  # Signal success
         # else:
         #     self.log_text.insert(tk.END, f"Database error: {message}\n")
         #     return False  # Signal failure

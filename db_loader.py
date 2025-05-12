@@ -3,7 +3,7 @@ import mysql.connector
 import os
 import sys
 
-TABLE_NAME = 'your_table'
+TABLE_NAME = 'product_station3'
 CSV_PATH = 'AM60.csv' # Set path here
 
 def load_csv_to_db():
@@ -18,9 +18,10 @@ def load_csv_to_db():
     # Connect to MySQL
     try:
         conn = mysql.connector.connect(
-            host = "192.168.2.128",
-            user = "tester",
-            passwd = "test",
+            host = "gitserver.local",
+            port = 3306,
+            user = "lol",
+            passwd = "not try to find it",
             database = "Fast_Product"
             )
         cursor = conn.cursor()
@@ -48,9 +49,9 @@ def load_csv_to_db():
     """
     
         # Insert the single row
-        row = tuple(df.iloc[0])
+        row = [str(x) for x in df.iloc[0]]
         cursor.execute(
-            f'INSERT INTO {TABLE_NAME} ({columns}) VALUES ({placeholders})',
+            f'INSERT INTO {TABLE_NAME} ({columns.lower()}) VALUES ({placeholders})',
             row
         )
 
@@ -63,4 +64,3 @@ def load_csv_to_db():
         conn.close()
         del cursor
         del conn
-    
