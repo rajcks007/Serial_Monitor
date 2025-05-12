@@ -211,6 +211,7 @@ class SerialMonitor:
             self.log_text.insert(tk.END, f"Connected to {port} at {baud} baud\n")   # Insert connection message into the log text area
             self.disconnect_button["state"] = tk.NORMAL # Enable the disconnect button
             self.connect_button["state"] = tk.DISABLED  # Disable the connect button
+            self.port_combobox["state"] = tk.DISABLED  # Disable the port combobox
             self.port_combobox_scan["state"] = tk.DISABLED  # Disable the port combobox
             self.refresh_button.config(state="disabled")
             self.baud_combobox.config(state="disabled")  # Enable the refresh button
@@ -281,6 +282,10 @@ class SerialMonitor:
                 if line:
                     buffer += line  # Append line to buffer
 
+                    # Show new message in log_text
+                    self.log_text.insert(tk.END, line)
+                    self.log_text.see(tk.END)  # Scroll to the end of the log text area
+
                     # Check for complete message between START and END
                     if start_marker in buffer and end_marker in buffer:
                         # Extract the message between START and END markers
@@ -300,10 +305,6 @@ class SerialMonitor:
                             continue  # Skip to the next iteration if the message is not valid
 
                         self.log_text.see(tk.END)  # Scroll to the end of the log text area
-
-                        # Show new message in log_text
-                        self.log_text.insert(tk.END, f"{log_entry}")
-                        self.log_text.see(tk.END)
 
                         # Update last_valid_message to the new message (this is the last good message now)
                         self.last_valid_message = f"[{timestamp}]\n{full_message}"
