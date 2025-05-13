@@ -218,8 +218,9 @@ class SerialMonitor:
             self.connect_button["state"] = tk.DISABLED  # Disable the connect button
             self.port_combobox["state"] = tk.DISABLED  # Disable the port combobox
             self.port_combobox_scan["state"] = tk.DISABLED  # Disable the port combobox
-            self.refresh_button.config(state="disabled")
-            self.baud_combobox.config(state="disabled")  # Enable the refresh button
+            self.refresh_button["state"] = tk.DISABLED      # Disable the refresh button
+            self.scan_button["state"] = tk.NORMAL  # Enable the scan button
+            self.baud_combobox["state"] = tk.DISABLED  # Enable the refresh button
 
             self.connection_active = True   # Set the flag to True to indicate connection is active
 
@@ -257,7 +258,6 @@ class SerialMonitor:
                 self.result_dict["Serial_Number"] = scanned_barcode  # Update with scanned barcode
                 dummy_timestamp = "null"  # Use a dummy timestamp
                 self.store_data_in_csv(dummy_timestamp, self.result_dict)   # Store the data in CSV
-                self.last_scanned_barcode = scanned_barcode # Store the last scanned barcode
 
             # If there was a previous valid message, append it to the log
             # This is useful for keeping track of the last scanned barcode
@@ -275,6 +275,12 @@ class SerialMonitor:
             self.log_text.delete("1.0", tk.END)  # Clear the log text area
             self.log_text.insert(tk.END, f"Serial No is : {scanned_barcode}\n")
 
+            if scanned_barcode:
+                self.last_scanned_barcode = scanned_barcode # Store the last scanned barcode
+            else:
+                self.log_text.insert(tk.END, "No barcode scanned.\n")       
+                self.last_scanned_barcode = ""  # Reset last scanned barcode
+
             
 
         else:
@@ -290,11 +296,16 @@ class SerialMonitor:
         while self.connection_active:
             try:
                 line = self.ser.readline().decode("utf-8", errors="ignore")  # Read line
+                timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")  # Get current timestamp
                 if line:
                     buffer += line  # Append line to buffer
-
-                    # Show new message in log_text
-                    self.log_text.insert(tk.END, line)
+                    if start_marker in line:
+                        self.scan_button["state"] = tk.DISABLED  # Enable the scan button
+                        self.log_text.insert(tk.END, f"[{timestamp}]\n")  # Show new message in log_text
+                    if end_marker in line:
+                        self.scan_button["state"] = tk.NORMAL  # Enable the scan button
+                        # Show new message in log_text
+                    self.log_text.insert(tk.END, line)  # Insert the line into the log text area
                     self.log_text.see(tk.END)  # Scroll to the end of the log text area
 
                     # Check for complete message between START and END
@@ -304,7 +315,6 @@ class SerialMonitor:
                         end_index = buffer.find(end_marker) + len(end_marker)
 
                         full_message = buffer[start_index:end_index].strip()
-                        timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                         log_entry = f"[{timestamp}]\n{full_message}\n"
 
                         # Store or log the message
