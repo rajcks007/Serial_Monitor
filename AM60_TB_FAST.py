@@ -21,9 +21,13 @@ def resource_path(relative_path):
     return os.path.join(base_path, relative_path)
 
 # Function to set the icon for the Tkinter window
-def set_window_icon(window, icon_path):
+def set_window_icon(window, icon_filename):
+    icon_path = resource_path(icon_filename)  # Get the icon path for both .exe and script
     if os.path.exists(icon_path):  # Check if the icon file exists
-        window.iconbitmap(icon_path)  # Set the icon for the window
+        try:
+            window.iconbitmap(icon_path)  # Set the icon for the window
+        except Exception as e:
+            print(f"Error setting icon: {e}")
     else:
         print(f"Icon file not found: {icon_path}")  # Print error message if icon file is not found
 
@@ -301,7 +305,7 @@ class SerialMonitor:
                     buffer += line  # Append line to buffer
                     if start_marker in line:
                         self.scan_button["state"] = tk.DISABLED  # Enable the scan button
-                        self.log_text.insert(tk.END, f"[{timestamp}]\n")  # Show new message in log_text
+                        self.log_text.insert(tk.END, f"Time :- {timestamp}\n")  # Show new message in log_text
                     if end_marker in line:
                         self.scan_button["state"] = tk.NORMAL  # Enable the scan button
                         # Show new message in log_text
@@ -462,5 +466,7 @@ class SerialMonitor:
 
 if __name__ == "__main__":  # Main function to run the application
     root = tk.Tk()  # Create the main window
+    # Set the window icon (make sure this is before mainloop)
+    set_window_icon(root, "fast.ico")
     app = SerialMonitor(root)   # Create an instance of the SerialMonitor class
     root.mainloop() # Start the Tkinter main loop to run the application

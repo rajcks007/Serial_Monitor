@@ -21,7 +21,7 @@ def load_csv_to_db():
             host = "gitserver.local",
             port = 3306,
             user = "rawsas",
-            passwd = "gf{u!lr<AnSkU@=sMN?,",
+            passwd = "dont tell anyone",
             database = "Fast_Product"
             )
         cursor = conn.cursor()
