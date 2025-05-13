@@ -459,58 +459,6 @@ class SerialMonitor:
             writer.writerow(["Timestamp"] + self.manual_header)
             # Then write the new row
             writer.writerow([timestamp] + [result_dict.get(key, "null") for key in self.manual_header])
-        
-    """
-    # Uncomment the following method if you want to implement TXT export functionality
-    def export_txt(self):   # Method to export the log data as a TXT file
-        data = self.log_text.get(1.0, tk.END)   # Get all the text from the log text area
-        filename = f"serial_log_{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}.txt" # Create a filename with a timestamp
-        with open(filename, "w") as file:   # Open the file in write mode
-            file.write(data)    
-        self.log_text.insert(tk.END, f"Log exported as TXT: {filename}\n")  # Insert export message into the log text area
-
-    # Uncomment the following method if you want to implement CSV export functionality
-    def export_csv(self):   # Method to export the log data as a CSV file
-        if not self.captured_messages:
-            self.log_text.insert(tk.END, "No data to export!\n")
-            return  # Exit early if no data is available
-    
-        csv_filename = "AM60.csv"  # Create a filename for the CSV file
-        file_exists = os.path.isfile(csv_filename)
-        # If the file already exists, append to it; otherwise, create a new one
-        if not file_exists:
-            with open(csv_filename, mode="w", newline="") as csvfile:
-                csv_writer = csv.writer(csvfile)
-                # Write the header row
-                csv_writer.writerow(["Received Time", "Export Time", "Message"])
-
-
-        with open(csv_filename, mode="a", newline="") as csvfile:
-            csv_writer = csv.writer(csvfile)
-
-            # Write the data rows
-            for received_time, message in self.captured_messages:
-                csv_writer.writerow([received_time, message])
-
-        self.log_text.insert(tk.END, f"Log exported as CSV: {csv_filename}\n")
-        self.captured_messages.clear()  # Clear the captured messages list after processing
-        
-    # Uncomment the following method if you want to implement XML export functionality
-    def export_xml(self):   # Method to export the log data as an XML file
-        data = self.log_text.get(1.0, tk.END)   # Get all the text from the log text area
-        filename = f"serial_log_{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}.xml" # Create a filename with a timestamp
-        # Create an XML structure
-        root = ET.Element("LogData")    # Create the root element
-        lines = data.splitlines()   # Split the data into lines
-        for line in lines:  # Iterate through each line
-            entry = ET.SubElement(root, "Entry")    # Create a new entry element for each line
-            ET.SubElement(entry, "Data").text = line    # Create a sub-element for the data
-            ET.SubElement(entry, "Timestamp").text = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        # Write the XML structure to a file
-        tree = ET.ElementTree(root)   # Create an ElementTree object
-        tree.write(filename)    # Write the XML data to the file
-        self.log_text.insert(tk.END, f"Log exported as XML: {filename}\n")  # Insert export message into the log text area
-    """
 
 if __name__ == "__main__":  # Main function to run the application
     root = tk.Tk()  # Create the main window
