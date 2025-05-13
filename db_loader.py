@@ -20,8 +20,8 @@ def load_csv_to_db():
         conn = mysql.connector.connect(
             host = "gitserver.local",
             port = 3306,
-            user = "lol",
-            passwd = "not try to find it",
+            user = "rawsas",
+            passwd = "dont tell anyone",
             database = "Fast_Product"
             )
         cursor = conn.cursor()

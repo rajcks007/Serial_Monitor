@@ -29,7 +29,7 @@ def barcode_scanner(port_name):
                 else:
                     buffer += byte
             else:
-                pass  # No data this moment; wait quietly
+                break  # No data this moment; wait quietly
     except serial.SerialException as e:
         print(f"Serial error: {e}")
     except Exception as e:

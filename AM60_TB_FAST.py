@@ -81,16 +81,17 @@ class SerialMonitor:
         self.connection_active = False  
 
         self.manual_header = [ "Serial_Number",
-                               "LED_AVERAGE",
+                               "LED_status",
                                "VCC_AVERAGE", 
                                "PLUS_AVERAGE", 
                                "MINUS_AVERAGE",
-                               "BATTERY_AVERAGE",
-                               "LED", 
+                               "BATTERY_AVERAGE", 
+                               "BUCK_AVERAGE",
                                "VCC",
                                "PLUS_VOLT", 
                                "MINUS_VOLT",
                                "BATTERY_VOLT", 
+                               "BUCK_VOLT",
                                "RASPBERRY_PI", 
                                "RASPBERRY_PI_RUN", 
                                "SCREEN_1", 
@@ -98,8 +99,12 @@ class SerialMonitor:
                                "SCREEN_3", 
                                "SCREEN_4", 
                                "SCREEN_5",
-                               "SCREEN_6" ]  # Define the manual header for the CSV file
+                               "SCREEN_6",
+                                "Status" ]  # Define the manual header for the CSV file
         self.header = self.manual_header  # Set the header to manual header by default
+
+        # Initialize result_dict with "null"
+        self.result_dict = {key: "null" for key in self.manual_header}
     
     def refresh_ports(self):
         # Clear the current port list and re-populate
@@ -247,6 +252,12 @@ class SerialMonitor:
         selected_port = self.port_combobox_scan.get()  # Get the selected port for QR scanner
         if selected_port:
             scanned_barcode = barcode_scanner(selected_port)  # Pass the selected port to the scanner function
+            if scanned_barcode:  # If barcode was scanned successfully
+                self.result_dict = {key: "null" for key in self.manual_header}  # Reset result_dict to "null" for all keys
+                self.result_dict["Serial_Number"] = scanned_barcode  # Update with scanned barcode
+                dummy_timestamp = "null"  # Use a dummy timestamp
+                self.store_data_in_csv(dummy_timestamp, self.result_dict)   # Store the data in CSV
+                self.last_scanned_barcode = scanned_barcode # Store the last scanned barcode
 
             # If there was a previous valid message, append it to the log
             # This is useful for keeping track of the last scanned barcode
@@ -264,7 +275,7 @@ class SerialMonitor:
             self.log_text.delete("1.0", tk.END)  # Clear the log text area
             self.log_text.insert(tk.END, f"Serial No is : {scanned_barcode}\n")
 
-            self.last_scanned_barcode = scanned_barcode # Store the last scanned barcode
+            
 
         else:
             self.log_text.insert(tk.END, "No port selected for scanner.\n")
@@ -317,6 +328,13 @@ class SerialMonitor:
                 break
  
     def save_message_exact(self, full_message, timestamp):  # Method to save the message to a CSV file
+
+        for key in self.manual_header:
+            if key == "Serial_Number" and self.result_dict.get(key, "null") not in ["null", ""]:
+            # If the column is "Serial_Number" and it already has a valid value, keep it intact
+                continue
+            self.result_dict[key] = "null"  # Set all other columns to "null"
+
         # Split the full message into individual lines
         split_message = [part.strip() for part in full_message.splitlines() if part.strip()]
 
@@ -327,57 +345,87 @@ class SerialMonitor:
         if not filtered_message:
             return False  # Signal to skip
         
-        result_dict = {key: "null" for key in self.manual_header}  # Initialize a dictionary with empty values for each header
+         # Ensure result_dict exists from scan step
+        if not hasattr(self, "result_dict"):
+            self.result_dict = {key: "null" for key in self.manual_header}
+
 
         # Fixed line-to-header mapping (exact match)
         fixed_lines_map = {
-            "LED is not OK": ("LED", "1"),
-            "LED is OK": ("LED", "0"),
-            "Vcc Volt is not OK !": ("VCC", "1"),
-            "Vcc Volt is OK !": ("VCC", "0"),
-            "Plus 5 Volt is not OK": ("PLUS VOLT", "1"),
-            "Plus 5 Volt is OK": ("PLUS VOLT", "0"),
-            "Minus 5 volt is not OK": ("MINUS VOLT", "1"),
-            "Minus 5 volt is OK": ("MINUS VOLT", "0"),
-            "Battery Volt is not OK !": ("BATTERY VOLT", "1"),
-            "Battery Volt is OK !": ("BATTERY VOLT", "0"),
-            "Raspberry pi is not working !": ("RASPBERRY PI", "0"),
-            "raspberry pi is OK": ("RASPBERRY PI", "1"),
-            "raspberry pi is running": ("RASPBERRY PI RUN", "1"),
+            "LED is not OK": ("LED_status", "0"),
+            "LED is OK": ("LED_status", "1"),
+            "Vcc Volt is not OK !": ("VCC", "0"),
+            "Vcc Volt is OK !": ("VCC", "1"),
+            "Plus 5 Volt is not OK": ("PLUS_VOLT", "0"),
+            "Plus 5 Volt is OK": ("PLUS_VOLT", "1"),
+            "Minus 5 volt is not OK": ("MINUS_VOLT", "0"),
+            "Minus 5 volt is OK": ("MINUS_VOLT", "1"),
+            "bat is not OK": ("BATTERY_VOLT", "0"),
+            "bat is OK": ("BATTERY_VOLT", "1"),
+            "buck is not OK": ("BUCK_VOLT", "0"),
+            "buck is OK": ("BUCK_VOLT", "1"),
+            "Raspberry pi is not working !": ("RASPBERRY_PI", "0"),
+            "raspberry pi is OK": ("RASPBERRY_PI", "1"),
+            "raspberry pi is running": ("RASPBERRY_PI_RUN", "1"),
         }
 
         lines = [line.strip() for line in full_message.splitlines() if line.strip()]
         screen_count = 0  # Initialize screen count for each message
 
         for line in lines:
-            if line.startswith("led_avg ="):
-                result_dict["LED AVERAGE"] = line.split("=", 1)[1].strip()
-            elif line.startswith("Vcc_avg ="):
-                result_dict["VCC AVERAGE"] = line.split("=", 1)[1].strip()
+            if line.startswith("Vcc_avg ="):
+                self.result_dict["VCC_AVERAGE"] = line.split("=", 1)[1].strip()
             elif line.startswith("plus_5_avg ="):
-                result_dict["PLUS AVERAGE"] = line.split("=", 1)[1].strip()
+                self.result_dict["PLUS_AVERAGE"] = line.split("=", 1)[1].strip()
             elif line.startswith("min_5_avg ="):
-                result_dict["MINUS AVERAGE"] = line.split("=", 1)[1].strip()
-            elif line.startswith("Battery_avg ="):
-                result_dict["BATTERY AVERAGE"] = line.split("=", 1)[1].strip()
+                self.result_dict["MINUS_AVERAGE"] = line.split("=", 1)[1].strip()
+            elif line.startswith("bat_avg ="):
+                self.result_dict["BATTERY_AVERAGE"] = line.split("=", 1)[1].strip()
+            elif line.startswith("buck_avg ="):
+                self.result_dict["BUCK_AVERAGE"] = line.split("=", 1)[1].strip()
             elif "screen is working ok" in line.lower() or "screen is not ok" in line.lower():          # Check if the line contains "screen is working ok" or "screen is not ok"
                 # Assign values to Screen_1, Screen_2, etc., depending on how many screens are being processed
-                if screen_count < len([key for key in result_dict if "SCREEN" in key]):
-                    # Find the next available "SCREEN_X" slot and assign the value ("1" for "working ok", "0" for "not ok")
-                    screen_key = f"SCREEN_{screen_count + 1}"  # This is for Screen_1, Screen_2, etc.
-                    result_dict[screen_key] = "1" if "working ok" in line.lower() else "0"
-                    screen_count += 1  # Move to the next "SCREEN_X" column
+                screen_key = f"SCREEN_{screen_count + 1}"
+                self.result_dict[screen_key] = "1" if "working ok" in line.lower() else "0"
+                screen_count += 1
 
             elif line in fixed_lines_map:
                 header, value = fixed_lines_map[line]
-                result_dict[header] = value
+                self.result_dict[header] = value
 
-        # Save to CSV (overwrite to keep only latest message)
-        csv_filename = "AM60.csv"
-        with open(csv_filename, mode="w", newline="") as csvfile:  # Open in write mode
-            writer = csv.writer(csvfile)
-            writer.writerow(["Timestamp"] + self.manual_header)
-            writer.writerow([timestamp] +  [result_dict[key] for key in self.manual_header])
+        # Error check 1: Serial number is null
+        if self.result_dict.get("Serial_Number", "null") == "null":
+            print("ERROR: Please scan Serial number")
+
+        # Error check 2: More than 5 nulls from col 3 to col 15
+        keys_3_to_15 = self.manual_header[1:16]  # Skip timestamp (assumed separate), take 2nd to 15th headers
+        null_count = sum(1 for key in keys_3_to_15 if self.result_dict.get(key, "null") == "null")
+
+        if null_count > 2:
+            print("ERROR: More than 2 missing values in diagnostic range (cols 3–15)")
+            print("Please Reset Controller and try again")
+
+        # Status check based on LED status and volt statuses (cols 3 and 9–15)
+        status_check_keys = [
+            "LED status",       # Column 3
+            "VCC",              # Column 9
+            "PLUS_VOLT",        # Column 10
+            "MINUS_VOLT",       # Column 11
+            "BATTERY_VOLT",     # Column 12
+            "BUCK_VOLT",        # Column 13
+            "RASPBERRY_PI",     # Column 14
+            "RASPBERRY_PI_RUN",  # Column 15
+            "SCREEN_1"          # Column 16
+        ]
+
+        status_values = [self.result_dict.get(k, "null") for k in status_check_keys]
+        if "0" in status_values:
+            self.result_dict["Status"] = "BAD"
+        elif all(val == "1" for val in status_values):
+            self.result_dict["Status"] = "GOOD"
+
+        # Now, call store_data_in_csv to save this data in CSV
+        self.store_data_in_csv(timestamp, self.result_dict)
 
         # success, message = db_loader.load_csv_to_db()  # Call the function to load data into the database
         # if success:
@@ -386,6 +434,21 @@ class SerialMonitor:
         #     self.log_text.insert(tk.END, f"Database error: {message}\n")
         #     return False  # Signal failure
         return True  # Signal success
+        
+    def store_data_in_csv(self, timestamp, result_dict):
+        csv_filename = "AM60.csv"  # Create a filename for the CSV file
+
+        # Use self.result_dict if none is passed
+        if result_dict is None:
+            result_dict = self.result_dict
+
+        # Always open in write mode to overwrite previous content
+        with open(csv_filename, mode="w", newline="") as file:
+            writer = csv.writer(file)
+            # If the file doesn't exist, write the header
+            writer.writerow(["Timestamp"] + self.manual_header)
+            # Then write the new row
+            writer.writerow([timestamp] + [result_dict.get(key, "null") for key in self.manual_header])
         
     """
     # Uncomment the following method if you want to implement TXT export functionality
