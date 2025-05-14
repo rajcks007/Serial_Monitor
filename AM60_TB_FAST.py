@@ -109,6 +109,16 @@ class SerialMonitor:
 
         # Initialize result_dict with "null"
         self.result_dict = {key: "null" for key in self.manual_header}
+
+        # Get the folder where the .exe is running
+        base_path = os.path.dirname(os.path.abspath(__file__))
+
+        # Define file paths
+        self.csv_path = os.path.join(base_path, 'AM60.csv')
+        self.txt_path = os.path.join(base_path, 'captured_messages.txt')
+
+        # Bind close event
+        self.master.protocol("WM_DELETE_WINDOW", self.on_close)
     
     def refresh_ports(self):
         # Clear the current port list and re-populate
@@ -121,6 +131,19 @@ class SerialMonitor:
     # Ensure disconnection before closing the app
         if self.connection_active:
             self.disconnect()
+
+        try:
+            os.chmod(self.csv_path, 0o666)
+            os.remove(self.csv_path)
+        except Exception as e:
+            print(f"Failed to delete CSV: {e}")
+
+        try:
+            os.chmod(self.txt_path, 0o666)
+            os.remove(self.txt_path)
+        except Exception as e:
+            print(f"Failed to delete TXT: {e}")
+
         self.master.destroy()  # Close the Tkinter window
 
     def create_widgets(self):  # Method to create the widgets in the main window
@@ -321,9 +344,16 @@ class SerialMonitor:
                         full_message = buffer[start_index:end_index].strip()
                         log_entry = f"[{timestamp}]\n{full_message}\n"
 
+                        if os.path.exists(self.txt_path):
+                            os.system(f'attrib -h "{self.txt_path}"')   # Unhide the file after writing
+                            os.system(f'attrib -r "{self.txt_path}"')  # Set file permissions to write
+
                         # Store or log the message
-                        with open("captured_messages.txt", "w") as file:
+                        with open(self.txt_path, "w") as file:
                             file.write(log_entry)
+                        
+                        os.system(f'attrib +r "{self.txt_path}"')   # Make the file read-only
+                        os.system(f'attrib +h "{self.txt_path}"')   # Hide the file after writing
 
                         if not self.save_message_exact(full_message, timestamp):
                             buffer = buffer[end_index:]
@@ -449,20 +479,25 @@ class SerialMonitor:
         #     return False  # Signal failure
         return True  # Signal success
         
-    def store_data_in_csv(self, timestamp, result_dict):
-        csv_filename = "AM60.csv"  # Create a filename for the CSV file
-
+    def store_data_in_csv(self, timestamp, result_dict): 
         # Use self.result_dict if none is passed
         if result_dict is None:
             result_dict = self.result_dict
 
+        if os.path.exists(self.csv_path):
+            os.system(f'attrib -h "{self.csv_path}"')  # Unhide the file before writing'
+            os.system(f'attrib -r "{self.csv_path}"')  # Set file permissions to write
+
         # Always open in write mode to overwrite previous content
-        with open(csv_filename, mode="w", newline="") as file:
+        with open(self.csv_path, mode="w", newline="") as file:
             writer = csv.writer(file)
             # If the file doesn't exist, write the header
             writer.writerow(["Timestamp"] + self.manual_header)
             # Then write the new row
             writer.writerow([timestamp] + [result_dict.get(key, "null") for key in self.manual_header])
+        
+        os.system(f'attrib +r "{self.csv_path}"')  # Make the file read-only
+        os.system(f'attrib +h "{self.csv_path}"')   # Hide the file after writing
 
 if __name__ == "__main__":  # Main function to run the application
     root = tk.Tk()  # Create the main window
