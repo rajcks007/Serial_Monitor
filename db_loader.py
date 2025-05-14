@@ -56,6 +56,7 @@ def load_csv_to_db():
         )
 
         conn.commit()
+        return True, f"Data inserted successfully"
     except mysql.connector.Error as err:
         return False, f"Error inserting data: {err}"
     finally:

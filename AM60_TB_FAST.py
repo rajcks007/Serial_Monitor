@@ -471,13 +471,13 @@ class SerialMonitor:
         # Now, call store_data_in_csv to save this data in CSV
         self.store_data_in_csv(timestamp, self.result_dict)
 
-        # success, message = db_loader.load_csv_to_db()  # Call the function to load data into the database
-        # if success:
-        #     return True  # Signal success
-        # else:
-        #     self.log_text.insert(tk.END, f"Database error: {message}\n")
-        #     return False  # Signal failure
-        return True  # Signal success
+        success, message = db_loader.load_csv_to_db()  # Call the function to load data into the database
+        if success:
+            return True  # Signal success
+        else:
+            self.log_text.insert(tk.END, f"Database error: {message}\n")
+            return False  # Signal failure
+        # return True  # Signal success
         
     def store_data_in_csv(self, timestamp, result_dict): 
         # Use self.result_dict if none is passed
