@@ -471,12 +471,17 @@ class SerialMonitor:
         # Now, call store_data_in_csv to save this data in CSV
         self.store_data_in_csv(timestamp, self.result_dict)
 
-        success, message = db_loader.load_csv_to_db()  # Call the function to load data into the database
+        os.system(f'attrib -h -r "{self.csv_path}"')  # Unhide and unlock the file before writing
+
+        success, message = db_loader.load_csv_to_db(self.csv_path)  # Call the function to load data into the database
         if success:
+            os.system(f'attrib +h +r "{self.csv_path}"')  # Unhide and unlock the file before writing
             return True  # Signal success
         else:
+            os.system(f'attrib +h +r "{self.csv_path}"')  # Unhide and unlock the file before writing
             self.log_text.insert(tk.END, f"Database error: {message}\n")
             return False  # Signal failure
+        
         # return True  # Signal success
         
     def store_data_in_csv(self, timestamp, result_dict): 

@@ -4,13 +4,12 @@ import os
 import sys
 
 TABLE_NAME = 'product_station3'
-CSV_PATH = 'AM60.csv' # Set path here
 
-def load_csv_to_db():
+def load_csv_to_db(CSV_PATH):
     # Check if CSV file exists
     if not os.path.exists(CSV_PATH):
         print(f"CSV file not found: {CSV_PATH}")
-        exit()
+        sys.exit()
     full_df = pd.read_csv(CSV_PATH)
     df = full_df.iloc[[0]]  # Only keep the second row (index 0 after skipping header)
     print(df)
@@ -21,8 +20,8 @@ def load_csv_to_db():
             host = "gitserver.local",
             port = 3306,
             user = "rawsas",
-            passwd = "do notuse",
-            database = "Fast_Product"
+            passwd = "gf{u!lr<AnSkU@=sMN?,",
+            database = "Fast_Product",
             )
         cursor = conn.cursor()
     except mysql.connector.Error as err:
